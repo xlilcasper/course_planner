@@ -1,3 +1,6 @@
+//Check out http://www.graphdracula.net/ for a network graph that might pair well with the way data is stored
+//Use http://visjs.org/network_examples.html for a more feature rich one.
+
 //Will need a object to hold data in a usable format
 var ClassInfo = function (classData) { //Pass in the course
     this.name=classData.prefix+classData.courseNumber;      //Holds the class id CS255
@@ -26,6 +29,22 @@ var ClassInfo = function (classData) { //Pass in the course
 
 }
 
+var Degree = function() {
+    this.required=[];
+    this.electives=[];
+    this.reqs={};
+    this.concurrent={};
+    this.electiveCredit=0;
+    this.addReq = function addReq(course, arrReqs) {
+        this.reqs[course]=this.reqs[course] || []; //Init it if we haven't already
+        this.reqs[course].push(new prereq(arrReqs));
+    }
+    this.addConcurrent = function addReq(course, arrReqs) {
+        this.concurrent[course]=this.reqs[course] || []; //Init it if we haven't already
+        this.concurrent[course].push(new prereq(arrReqs));
+    }
+}
+
 var prereq = function (arr) {
     this.rec = arr; //this array will hold equivalent classes. If you needed either MATH 120a or MATH 120b then it would hold ["MATH120a","MATH120b"]
 }
@@ -36,21 +55,16 @@ var siteReady=[];
 var domReady = $.Deferred();
 //holds our raw course data
 var courses={};
-
-//array to hold all our prereq data. Right now this has to be manualy built until a good parsing system can be built
-var reqs={};
-reqs["CS116"]=[];
-reqs["CS116"].push(new prereq("MATH103","MATH120A","MATH120B","MATH140","MATH161"));
-reqs["CS116"].push(new prereq("CS105","CS107"));
-
-reqs["CS216"]=[];
-reqs["CS216"].push(new prereq("MATH120A","MATH120B","MATH140","MATH161"));
-reqs["CS216"].push(new prereq("CS116"));
-
-reqs["CS245"]=[];
-reqs["CS245"].push(new prereq("MATH120B","MATH140","MATH161"));
-reqs["CS216"].push(new prereq("CS116"));
-
+//holds our formated course data
+var classList = {};
+//Required classes
+var degreeInfo={};
+//Fetch the data for CS. This will run the CS.js file
+//This way we have all the degree data for CS in one file and if it ever becomes
+//available to parse instead of manually update we can just edit that file to return the data
+//in the format needed.
+siteReady.push($.getScript("./js/dal/CS.js"));
+//Wait until the dom is read.
 siteReady.push(domReady.promise());
 
 var app=function () {
@@ -75,22 +89,28 @@ function main() {
     $("#loading-overlay").hide();
     console.log("Page is ready");
     //console.log(courses);
-    var dept=courses["CS"];
-    var classList = {};
-    //Loop though each course in CS and make our psudo
-    $.each(dept,function (i,classData) {
-        var classInfo = new ClassInfo(classData);
-        //Work around because !== " " was always true for some reason
-        if ($.trim(classData.prerequisites) != '') {
-            if (_.has(reqs,classInfo.name))
-                classInfo.prereqs=reqs[classInfo.name];
-            //console.log(classInfo);
-        }
-        //Store our class
-        classList[classInfo.name]=classInfo;
-    });
-    /* example of checking for prereq
+    var depts=["CS","CIS"];
+    $.each(depts,function(indx,deptName){
+        var dept=courses[deptName];
+
+        //Loop though each course in CS and make our psudo
+        $.each(dept,function (i,classData) {
+            var classInfo = new ClassInfo(classData);
+            //Work around because !== " " was always true for some reason
+            if ($.trim(classData.prerequisites) != '') {
+                if (typeof degreeInfo[deptName] !== 'undefined') {
+                    if (_.has(degreeInfo[deptName].reqs, classInfo.name)) {
+                        classInfo.prereqs = degreeInfo[deptName].reqs[classInfo.name];
+                    }
+                    console.log(classData);
+                }
+            }
+            //Store our class
+            classList[classInfo.name]=classInfo;
+        });
+    })
     console.log(classList);
+    /* example of checking for prereq
     console.log(classList["CS116"].hasPrereqs(["MATH103","CS105"]));
     console.log(classList["CS116"].hasPrereqs(["CS105"]));
     console.log(classList["CS101"].hasPrereqs(["CS105"]));

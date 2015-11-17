@@ -1,0 +1,8 @@
+.checkbox-inline.no_indent,
+.checkbox-inline.no_indent+.checkbox-inline.no_indent {
+    margin-left: 0;
+    margin-right: 10px;
+}
+.checkbox-inline.no_indent:last-child {
+    margin-right: 0;
+}

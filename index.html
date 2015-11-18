@@ -32,11 +32,34 @@ Print out Garrnt chart of suggested classes
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.2.2/underscore.string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
+
 
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
     <script type="text/javascript" src="js/index.js" async></script>
 
+    <!--Fall back to local if CDN fails-->
+    <script>
+        if (typeof jQuery === 'undefined') {
+            console.error("CDN for jquery is down, google is down, all is lost");
+            document.write('<script src="js/jquery-2.1.4.min.js">\x3C/script>');
+        }
+        if (typeof _ === 'undefined') {
+            console.error("CDN for underscore is down, using local copy");
+            document.write('<script src="js/underscore-min.js">\x3C/script>');
+        }
+        if (typeof _ === 'undefined') {
+            console.error("CDN for underscore string is down, using local copy");
+            document.write('<script src="js/underscore-string.min.js">\x3C/script>');
+        }
+        if (typeof vis === 'undefined') {
+            console.error("CDN for vis is down, using local copy");
+            document.write('<script src="js/vis.min.js">\x3C/script>');
+            document.write('<link rel="stylesheet" href="css/vis.min.css">');
+        }
+    </script>
 
 </head>
 <body>
@@ -68,104 +91,9 @@ Print out Garrnt chart of suggested classes
         </div>
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-body">
+                <div class="panel-body" id="classList">
                     Please select the classes you have completed below<br/>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
-                    <label class="checkbox-inline no_indent">
-                        <input type="checkbox"> Class 1
-                    </label>
+                    <!-- This will be filled in by the app with all classes it knows about -->
                 </div>
             </div>
         </div>
@@ -195,13 +123,16 @@ Print out Garrnt chart of suggested classes
                             <label class="control-label">Maximum Credits</label>
                             <input type="text" class="form-control inline" value="16">
                         </div>
+                        <div class="col-xs-2">
+                            <input type="button" class="form-control inline" value="Submit" onclick="calcSchedule()">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-12">
             <div class="panel panel-default">
-                <div class="panel-body">
+                <div class="panel-body" id="classToTake">
                     Here is a list of classes you can take
                 </div>
             </div>
@@ -210,6 +141,13 @@ Print out Garrnt chart of suggested classes
             <div class="panel panel-default">
                 <div class="panel-body">
                     Here is a fancy chart of what we suggest you take
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div id="courseChart"></div>
                 </div>
             </div>
         </div>

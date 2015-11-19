@@ -3,7 +3,9 @@
  */
 //Check out http://catalog.svsu.edu/search_advanced.php?cur_cat_oid=24&search_database=Search&search_db=Search&cpage=1&ecpage=1&ppage=1&spage=1&tpage=1&location=3&filter%5Bkeyword%5D=cis311&filter%5Bexact_match%5D=1
 //to see if we can't some how pull this data programmatically.
-degreeInfo["CS"]=new Degree();
+degreeInfo["CS"]=new Degree(degreeInfo);
+degreeInfo["CS"].setEquivalent("MATH140",["MATH120A","MATH120B"]);
+degreeInfo["CS"].setEquivalent("MATH161",["MATH140","MATH120A","MATH120B"]);
 
 //Format is the same. each entry in required is required. if the entry in required is an array, any of those fill that requirment.
 degreeInfo["CS"].addRequired(["MATH140"]);
@@ -87,3 +89,4 @@ degreeInfo["CS"].addPreReq("CS451",["CS316"]);
 
 degreeInfo["CS"].addPreReq("CS471",["CS421"]);
 
+degreeInfo["CS"].addPreReq("CS357",["CS216"]);

@@ -18,21 +18,9 @@ var ClassInfo = function (classData) { //Pass in the course
     this.instructor=classData.instructors;                  //Who teaches the class
     this.priority=0;                                        //0 is the lowest priority
     this.prereqs=[];                                        //Array of prereq's. One for each required class.
-    this.hasPrereqs = function (classes) { //Takes an array of classes taken
-        var ok = true;
-        $.each(this.prereqs,function(key,value) {
-            //Value will now be an array of prereqs, we need one of each. If this fails then return false, we don't have
-            //what we need.
-            if (_.intersection(classes,value).length===0) { //We are missing a req
-                ok=false;
-                return false; //Breaks out of our each loop
-            }
-        });
-        return ok;
-    };
 };
 
-var Degree = function() {
+var Degree = function(otherDegrees) {
     this.nodes=new vis.DataSet();
     this.edges=new vis.DataSet();
 
@@ -43,6 +31,8 @@ var Degree = function() {
     this.reqs={};
     this.concurrent={};
     this.priorityList={};
+    this.equivalent = {}
+    this.otherDegrees=otherDegrees;
 
     this.addRequired=function addRequired(classNames) {
         this.required.push(classNames);
@@ -77,6 +67,14 @@ var Degree = function() {
         this.concurrent[course]=this.concurrent[course] || []; //Init it if we haven't already
         this.concurrent[course].push(arrReqs);
     };
+
+    this.setEquivalent = function setEquivalent (course,arrCourses) { //arrCourses are equivilent courses
+        this.equivalent[course]=arrCourses;
+    }
+
+    this.isEquivalent = function isEquivalent(course,course2) {
+        return !(_.indexOf(this.equivalent[course],course2)===-1);
+    }
 
     this.getGraphData = function getGraphData() {
         return {
@@ -149,9 +147,15 @@ var Degree = function() {
 
     this.canTake = function (node,classes) { // node is the class you want to take, classes is what you have already taken in an array
         var ok = true;
-        if (typeof this.reqs[node] === 'undefined') //We have no prereqs
+        var re = /([A-Z]{2,4})(\d{3})/;
+        var dept = re.exec(node)[1];
+        debugPrint("canTake dept",dept);
+        if (typeof otherDegrees[dept] === 'undefined') //We don't have any degree info, so no prereqs
             return true;
-        $.each(this.reqs[node],function(key,value) {
+        if (typeof otherDegrees[dept].reqs[node] === 'undefined') //We have no prereqs
+            return true;
+
+        $.each(otherDegrees[dept].reqs[node],function(key,value) {
             //Value will now be an array of prereqs, we need one of each. If this fails then return false, we don't have
             //what we need.
             if (_.intersection(classes,value).length===0) { //We are missing a req
@@ -165,6 +169,8 @@ var Degree = function() {
 
 //Array of promises to know when both the data has loaded and that the dom is ready.
 var siteReady=[];
+//Array of promises for each DAL script we need to load
+var scriptsReady=[];
 //Promise when our page is ready
 var domReady = $.Deferred();
 //holds our raw course data
@@ -192,20 +198,28 @@ function init()
     //This way we have all the degree data for CS in one file and if it ever becomes
     //available to parse instead of manually update we can just edit that file to return the data
     //in the format needed.
-    $.getScript("./js/dal/"+degreeFilter+".js").done(function() {
+    var arrDalsToLoad = ["CS","CIS"];
+        $.each(arrDalsToLoad,function(index,fileName) {
+            scriptsReady.push($.getScript("./js/dal/" + fileName + ".js").done(function () {
+
+                }).fail(function () {
+                    if (arguments[0].readyState == 0) {
+                        console.error("Script "+ fileName +" failed to load");
+                    } else {
+                        //script loaded but failed to parse
+                        console.error("Script "+ fileName +" failed to load due to script error");
+                        console.error(arguments[2].toString());
+                    }
+                })
+            )});
+
+    $.when.apply(null, scriptsReady).then(function() {
         degreeInfo[degreeFilter].calcPriorityAll();
         siteReady.push(getData().done(function () {
             //Set our button from loading to check
             //$("#runButton").text("Run");
         }));
         $.when.apply(null, siteReady).then(main);
-    }).fail(function(){
-        if(arguments[0].readyState==0){
-            console.error("Script failed to load");
-        }else{
-            //script loaded but failed to parse
-            console.error(arguments[2].toString());
-        }
     });
 }
 //Our data is loaded and our dom is loaded. Process the data and bind our events.
@@ -271,6 +285,10 @@ function calcSchedule() {
     var classesTaken = $('.checkbox-classList:checked').map(function () {
         return this.value;
     }).get();
+    //Add in equivelent classes as classes taken
+    $.each(classesTaken,function (index,value) {
+        classesTaken = _.union(classesTaken,degreeInfo[degreeFilter].equivalent[value]);
+    })
     //Sort it by name
     classesTaken=_.sortBy(classesTaken,function (name) {return name});
     //Sort classes by priority
@@ -283,30 +301,36 @@ function calcSchedule() {
     //Select classes until I hit max credit. Classes should not be selected if it conflicts with an already scheduled class
     //or I have already taken it
     var toTake=[];
+    var canTake=[];
     var creditsTaken=0;
     debugPrint("classes taken so far",classesTaken);
     $.each(classPriority,function(index,value) {
-        if (typeof classList[value.name] === 'undefined' ) {
-            debugPrint("Class not offered "+value.name);
-            return true; //Class isn't offered so we skip it.
-        }
+
         var classData = classList[value.name];
-        if (_.indexOf(classesTaken,classData[0].name,true) ===-1) { //select it only if we haven't already taken it
+        if (_.indexOf(classesTaken,value.name,true) ===-1) { //select it only if we haven't already taken it
             debugPrint("Can I take " + value.name ,degreeInfo['CS'].canTake(value.name,classesTaken));
             if (degreeInfo[degreeFilter].canTake(value.name,classesTaken)) {
-                debugPrint("Taking ", classData[0]);
-                toTake.push(value.name);
-                creditsTaken += parseInt(classData[0].credits);
-                debugPrint("Credits taken ", creditsTaken);
-                if (creditsTaken >= 16) {
-                    debugPrint("Taken all we can");
-                    return false;
+                if (typeof classList[value.name] === 'undefined' ) { //Not offered
+                    debugPrint("Class not offered "+value.name);
+                    canTake.push(value.name);
+                    return true; //Class isn't offered so we skip it.
+                } else {
+                    debugPrint("Taking ", classData[0]);
+                    toTake.push(value.name);
+                    canTake.push(value.name);
+                    creditsTaken += parseInt(classData[0].credits);
+                    debugPrint("Credits taken ", creditsTaken);
+                    if (creditsTaken >= 16) {
+                        debugPrint("Taken all we can");
+                        return false;
+                    }
                 }
             }
         }
     });
     debugPrint("Take: ",toTake);
     $("#classToTake").text(toTake);
+    $("#classCanTake").text(canTake);
 }
 
 //Pull down our data one department at a time

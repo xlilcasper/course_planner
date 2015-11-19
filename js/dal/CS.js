@@ -6,6 +6,8 @@
 degreeInfo["CS"]=new Degree(degreeInfo);
 degreeInfo["CS"].setEquivalent("MATH140",["MATH120A","MATH120B"]);
 degreeInfo["CS"].setEquivalent("MATH161",["MATH140","MATH120A","MATH120B"]);
+degreeInfo["CS"].setEquivalent("CS105",["CS107"]);
+degreeInfo["CS"].setEquivalent("CS107",["CS105"]);
 
 //Format is the same. each entry in required is required. if the entry in required is an array, any of those fill that requirment.
 degreeInfo["CS"].addRequired(["MATH140"]);

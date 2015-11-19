@@ -121,24 +121,17 @@ var Degree = function(otherDegrees) {
         $.each(cl,function(indx,node) {
             that.updatePriority(node);
         });
-        /*
-        //Loop though each required and calculate the priority{
-        $.each(cl,function(indx,value) {
-            if (that.priorityList[value] === 0) {
-                //We need to calc our priority
-                that.priorityList[value]=that.calcPriority(value);
-            }
-        });
-        */
     };
 
     this.updatePriority = function updatePriority(node) {
         var that=this;
         if (typeof that.reqs[node] === 'undefined') { //I have no prereqs so I am a value 1 node
-            return true;
+            return 1;
         }
         $.each(that.reqs[node],function (index,reqsArr) {
             $.each(reqsArr,function (index,reqClass) {
+                if (typeof that.required[reqClass]!== 'undefined')
+                    that.priorityList[reqClass] += 1; //Add an extra bit to classes that are required for our major
                 that.priorityList[reqClass] += 1;
                 that.updatePriority(reqClass);
             });
@@ -194,6 +187,12 @@ init();
 //Our init function should make sure all the data is ready and the dom is loaded
 function init()
 {
+    //Bind our click handler for expanding out
+    /*$('.classHeaderExpand').click(function(){
+        alert("I was clicked");
+        $('.classContentExpand').slideToggle('slow');
+    });*/
+
     //Fetch the data for CS. This will run the CS.js file
     //This way we have all the degree data for CS in one file and if it ever becomes
     //available to parse instead of manually update we can just edit that file to return the data
@@ -249,23 +248,29 @@ function main() {
             classList[classInfo.name].push(classInfo);
         });
     })
-    //console.log(degreeInfo[degreeFilter].getGraphData());
-    debugPrint("Can I take 116? " ,degreeInfo['CS'].canTake("CS116",["MATH103","CS105"]));
-     //example of checking for prereq
-    /*
-    console.log(classList["CS116"][0].hasPrereqs(["MATH103","CS105"]));
-    console.log(classList["CS116"][0].hasPrereqs(["CS105"]));
-    console.log(classList["CS101"][0].hasPrereqs(["CS105"]));
-    */
 
     //Fill in our checkbox list
-    var checkTemplate=_.template('<label class="checkbox-inline no_indent"><input type="checkbox" class="checkbox-classList" value="<%=name%>"> <%=name%></label>');
+    var checkTemplate=_.template('<label class="checkbox-inline no_indent"><input type="checkbox" class="checkbox-classList classContentExpand" value="<%=name%>"> <%=name%></label>');
     var sortedClassList = _.sortBy(degreeInfo[degreeFilter].getClassList(),function (name) {return name});
+    var lastDept="";
+    var first=true;
+    var html='';
     $.each(sortedClassList,function (index,value) {
-        var checkBoxHTML = checkTemplate({name: value});
-        $("#classList").append(checkBoxHTML);
-    });
+        var re = /([A-Z]{2,4})(\d{3})/;
+        var deptName = re.exec(value)[1];
+        if (deptName !== lastDept){
+            if (!first) {
+                html+="</div>";
+            }
+            first=false;
+            html+='<h5>'+deptName+'</h5><div>';
+            lastDept=deptName;
+        }
+        html += checkTemplate({name: value});
 
+    });
+    $("#classList").append(html+'</div>');
+    $("#classList").accordion();
     //Draw our graph
     var container = $("#courseChart")[0];
     var options = {
@@ -328,8 +333,8 @@ function calcSchedule() {
             }
         }
     });
-    debugPrint("Take: ",toTake);
-    $("#classToTake").text(toTake);
+    debugPrint("Take: ",linkedCourseArray(toTake));
+    $("#classToTake").append(linkedCourseArray(toTake));
     $("#classCanTake").text(canTake);
 }
 
@@ -357,6 +362,17 @@ function getData() {
     });
     $.when.apply(null,getPromise).then(function() {myPromise.resolve();});
     return myPromise.promise(); //return our promise;
+}
+
+function linkedCourseArray(arrCourses) {
+    var html='';
+    var url="http://catalog.svsu.edu/search_advanced.php?search_database=Search&search_db=Search&cpage=1&ecpage=1&ppage=1&spage=1&tpage=1&location=3&filter%5Bexact_match%5D=1&filter%5Bkeyword%5D=";
+    var linkTemplate=_.template('<a href="<%=url%><%=name%>" target="_blank"><%=name%></a> ');
+
+    $.each(arrCourses,function(index,value) {
+        html+=linkTemplate({url: url,name:value})
+    })
+    return html;
 }
 
 function debugPrint (msg,obj) {

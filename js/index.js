@@ -13,8 +13,31 @@ var ClassInfo = function (classData) { //Pass in the course
     this.credits=classData.credit;                          //Number of credits the course is worth
     this.room=classData.meetingTimes[0].room;               //Room the course is in
     this.days=s.chars(classData.meetingTimes[0].days);      //Days of the week. Should only contian U,M,T,W,R,F,S
-    this.startTime=classData.meetingTimes[0].startTime;     //Start time of the course as a string
-    this.endTime=classData.meetingTimes[0].endTime;         //end time of the course as a string
+
+    //Get the current day of the week
+    var dWeek=["N","M","T","W","R","F","S"];
+    var i = this.days.length;
+    this.times=[];
+    while (i--) {
+        var daysAdd = _.indexOf(dWeek, this.days[i]);
+        var t = moment(classData.meetingTimes[0].startTime, 'HH:mm A');
+        var startHour = t.get('hour');
+        var startMin = t.get('minute');
+        var startTime = moment().startOf('week');
+        startTime.add(daysAdd, 'days');
+        startTime.add(startHour, 'hours');
+        startTime.add(startMin, 'minutes');
+
+        t = moment(classData.meetingTimes[0].endTime, 'HH:mm A');
+        var endHour = t.get('hour');
+        var endMin = t.get('minute');
+        var endTime = moment().startOf('week');
+        endTime.add(daysAdd, 'days');
+        endTime.add(endHour, 'hours');
+        endTime.add(endMin, 'minutes');
+        this.times.push({start: startTime,end: endTime});
+    }
+
     this.instructor=classData.instructors;                  //Who teaches the class
     this.priority=0;                                        //0 is the lowest priority
     this.prereqs=[];                                        //Array of prereq's. One for each required class.
@@ -31,7 +54,7 @@ var Degree = function(otherDegrees) {
     this.reqs={};
     this.concurrent={};
     this.priorityList={};
-    this.equivalent = {}
+    this.equivalent = {};
     this.otherDegrees=otherDegrees;
 
     this.addRequired=function addRequired(classNames) {
@@ -70,11 +93,11 @@ var Degree = function(otherDegrees) {
 
     this.setEquivalent = function setEquivalent (course,arrCourses) { //arrCourses are equivilent courses
         this.equivalent[course]=arrCourses;
-    }
+    };
 
     this.isEquivalent = function isEquivalent(course,course2) {
         return !(_.indexOf(this.equivalent[course],course2)===-1);
-    }
+    };
 
     this.getGraphData = function getGraphData() {
         return {
@@ -84,6 +107,7 @@ var Degree = function(otherDegrees) {
     };
 
     this.getClassList = function getClassList() {
+        //Pure magic
         var cl = _.flatten(_.union(_.flatten(this.required), _.flatten(this.electives),
             _.keys(this.reqs),_.flatten(_.map(this.reqs, _.values)),
             _.keys(this.concurrent),_.flatten(_.map(this.concurrent, _.values))
@@ -142,7 +166,6 @@ var Degree = function(otherDegrees) {
         var ok = true;
         var re = /([A-Z]{2,4})(\d{3})/;
         var dept = re.exec(node)[1];
-        debugPrint("canTake dept",dept);
         if (typeof otherDegrees[dept] === 'undefined') //We don't have any degree info, so no prereqs
             return true;
         if (typeof otherDegrees[dept].reqs[node] === 'undefined') //We have no prereqs
@@ -175,10 +198,6 @@ var degreeInfo={};
 
 //Wait until the dom is read.
 siteReady.push(domReady.promise());
-
-var app=function () {
-
-};
 
 $(document).ready(function() {domReady.resolve();});
 //start our main app. This should get the page ready and then call main() once everything is setup
@@ -247,7 +266,7 @@ function main() {
             classList[classInfo.name]=classList[classInfo.name]||[];
             classList[classInfo.name].push(classInfo);
         });
-    })
+    });
 
     //Fill in our checkbox list
     var checkTemplate=_.template('<label class="checkbox-inline no_indent"><input type="checkbox" class="checkbox-classList classContentExpand" value="<%=name%>"> <%=name%></label>');
@@ -293,11 +312,10 @@ function calcSchedule() {
     //Add in equivelent classes as classes taken
     $.each(classesTaken,function (index,value) {
         classesTaken = _.union(classesTaken,degreeInfo[degreeFilter].equivalent[value]);
-    })
+    });
     //Sort it by name
     classesTaken=_.sortBy(classesTaken,function (name) {return name});
     //Sort classes by priority
-    debugPrint("Priority list",degreeInfo[degreeFilter].priorityList);
     var classPriority = _.map(degreeInfo[degreeFilter].priorityList, function(val,key) {
         return {name:key,priority:val};
     });
@@ -306,35 +324,52 @@ function calcSchedule() {
     //Select classes until I hit max credit. Classes should not be selected if it conflicts with an already scheduled class
     //or I have already taken it
     var toTake=[];
+    var toTakeSections=[];
     var canTake=[];
     var creditsTaken=0;
-    debugPrint("classes taken so far",classesTaken);
-    $.each(classPriority,function(index,value) {
+    //Get days we want classes
+    var daysWanted = $('.checkbox-daysList:checked').map(function () {
+        return this.value;
+    }).get();
+    //Build an excludeTime array
+    var daysToExclude=[];
+    var dWeek=["N","M","T","W","R","F","S"];
+    var daysNotWanted = _.difference(dWeek,daysWanted);
+    $.each(daysNotWanted,function(index,day) {
+        daysToExclude.push(allDay(day));
+    });
 
+    $.each(classPriority,function(index,value) {
         var classData = classList[value.name];
         if (_.indexOf(classesTaken,value.name,true) ===-1) { //select it only if we haven't already taken it
-            debugPrint("Can I take " + value.name ,degreeInfo['CS'].canTake(value.name,classesTaken));
             if (degreeInfo[degreeFilter].canTake(value.name,classesTaken)) {
                 if (typeof classList[value.name] === 'undefined' ) { //Not offered
-                    debugPrint("Class not offered "+value.name);
                     canTake.push(value.name);
                     return true; //Class isn't offered so we skip it.
-                } else {
-                    debugPrint("Taking ", classData[0]);
-                    toTake.push(value.name);
-                    canTake.push(value.name);
-                    creditsTaken += parseInt(classData[0].credits);
-                    debugPrint("Credits taken ", creditsTaken);
-                    if (creditsTaken >= 16) {
-                        debugPrint("Taken all we can");
-                        return false;
+                } else { //Class is offered. Let make sure it doesn't conflict
+
+
+
+                    //var sections = checkTimeOverlap(value.name,toTake);
+                    //if (sections.length > 0) //we have at least one time we can take it
+                    {
+                        if (canTakeTogether(value.name,toTake,daysToExclude)) {
+                            toTake.push(value.name);
+                            //toTakeSections.push(sections);
+                            canTake.push(value.name);
+                            creditsTaken += parseInt(classData[0].credits);
+                            if (creditsTaken >= 16) {
+                                return false;
+                            }
+                        }
                     }
                 }
             }
         }
     });
-    debugPrint("Take: ",linkedCourseArray(toTake));
+    $("#classToTake").text("");
     $("#classToTake").append(linkedCourseArray(toTake));
+    $("#classToTake").append("<br>Credits: "+creditsTaken);
     $("#classCanTake").text(canTake);
 }
 
@@ -375,6 +410,75 @@ function linkedCourseArray(arrCourses) {
     return html;
 }
 
+function allDay(day) {
+    var dWeek=["N","M","T","W","R","F","S"];
+    var daysAdd = _.indexOf(dWeek, day);
+    var startTime = moment().startOf('week').add(daysAdd, 'days');
+    var endTime = moment().startOf('week').add(daysAdd, 'days').add(23,'hours').add(59,'minutes');
+    
+    return {start: startTime,end: endTime};
+}
+
+function canTakeTogether(course,arrCourses,excludeTimes) {
+    if ((typeof arrCourses==='undefined') || (arrCourses.length===0))//No conflicts because there is no other classes
+        return true;
+
+    var courseData = classList[course];
+    var canTake=true;
+
+    $.each(courseData,function(courseDataIndex,section) {
+        var days = section.times;
+        var courseCheck = arrCourses[0]; //Grab the first course in the list
+        var courseCheckData=classList[courseCheck];
+        var courseCheckTimes = _.pluck(courseCheckData,'times'); //contains all the times
+        if (typeof excludeTimes !=='undefined') {
+            //$.each(excludeTimes, function (index, checkTimes) { //Make sure we don't conflict with the exluded times
+                var nooverlap = noOverlap(excludeTimes, days);
+                if (!nooverlap) { //We overlap an exluded time
+                    canTake = false;
+                    return false;
+                }
+            //});
+        } else {
+            excludeTimes=[];
+        }
+        if (!canTake)
+            return false;
+        $.each(courseCheckTimes,function(index,checkTimes){
+            var nooverlap = noOverlap(checkTimes,days);
+
+            if (nooverlap) {
+                var badTimes = excludeTimes.concat(checkTimes).concat(days);
+                canTake = canTakeTogether(courseCheck, _.without(arrCourses,courseCheck),badTimes);
+            }
+            else {
+                canTake=false;
+                return false;//exit each
+            }
+        });
+        if (!canTake)
+            return false; //exit each
+    });
+    return canTake;
+}
+//Times1 and times2 is an array of times for the days the classes meet
+function noOverlap(times1,times2) {
+    debugPrint("Times 1",times1);
+    debugPrint("Times 2",times2);
+    var nooverlap=true;
+    $.each(times1,function(index,day1) {
+        $.each(times2,function(index,day2) {
+            if (day1.start.isBefore(day2.end) && day1.end.isAfter(day2.start)) {
+                nooverlap=false;
+                return false;
+            }
+        });
+        if (nooverlap===false)
+            return false;
+    });
+    return nooverlap;
+}
+
 function debugPrint (msg,obj) {
     if (debug) {
         var prefix="D/:";
@@ -392,4 +496,4 @@ function debugPrint (msg,obj) {
             console.log(msg);
         }
     }
-};
+}

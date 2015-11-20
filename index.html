@@ -28,6 +28,14 @@ Print out Garrnt chart of suggested classes
     <!-- Javascript libs -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+    <script src="js/underscore-min.js"></script>
+    <script src="js/underscore.string.min.js"></script>
+    <script src="js/moment.js"></script>
+
+    <link rel="stylesheet" href="css/vis.min.css">
+    <script src="js/vis.min.js"></script>
+    <!--
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.2.2/underscore.string.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
@@ -60,7 +68,7 @@ Print out Garrnt chart of suggested classes
             document.write('<link rel="stylesheet" href="css/vis.min.css">');
         }
     </script>
-
+    -->
 </head>
 <body>
     <div id="loading-overlay">
@@ -105,19 +113,19 @@ Print out Garrnt chart of suggested classes
                         <div class="col-xs-3">
                             <label class="control-label">Which days to search for classes?</label><br/>
                             <label class="checkbox-inline no_indent">
-                                <input type="checkbox"> M
+                                <input type="checkbox" class="checkbox-daysList" value="M" checked> M
                             </label>
                             <label class="checkbox-inline no_indent">
-                                <input type="checkbox"> T
+                                <input type="checkbox" class="checkbox-daysList" value="T" checked> T
                             </label>
                             <label class="checkbox-inline no_indent">
-                                <input type="checkbox"> W
+                                <input type="checkbox" class="checkbox-daysList" value="W" checked> W
                             </label>
                             <label class="checkbox-inline no_indent">
-                                <input type="checkbox"> R
+                                <input type="checkbox" class="checkbox-daysList" value="R" checked> R
                             </label>
                             <label class="checkbox-inline no_indent">
-                                <input type="checkbox"> F
+                                <input type="checkbox" class="checkbox-daysList" value="F" checked> F
                             </label>
                         </div>
                         <div class="col-xs-2">

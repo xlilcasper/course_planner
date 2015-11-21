@@ -1,0 +1,2 @@
+First class always ignores the "days to exclude."
+Edges of the graph do not get added if the class is in another degree file

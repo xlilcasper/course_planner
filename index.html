@@ -25,16 +25,7 @@ Print out Garrnt chart of suggested classes
     <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.5/darkly/bootstrap.min.css" rel="stylesheet" integrity="sha256-IsefKVCcMUlgpXQgIMRsqbIqC6aP153JkybxTa7W7/8= sha512-mCNEsmR1i3vWAq8hnHfbCCpc6V5fP9t0N1fEZ1wgEPF/IKteFOYZ2uk7ApzMXkT71sDJ00f9+rVMyMyBFwsaQg==" crossorigin="anonymous">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/index.css">
-    <!-- Javascript libs -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 
-    <script src="js/underscore-min.js"></script>
-    <script src="js/underscore.string.min.js"></script>
-    <script src="js/moment.js"></script>
-
-    <link rel="stylesheet" href="css/vis.min.css">
-    <script src="js/vis.min.js"></script>
     <!--
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.2.2/underscore.string.min.js"></script>
@@ -44,11 +35,7 @@ Print out Garrnt chart of suggested classes
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
 
 
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="js/index.js" async></script>
-
-    <!--Fall back to local if CDN fails-->
+    <!--Fall back to local if CDN fails
     <script>
         if (typeof jQuery === 'undefined') {
             console.error("CDN for jquery is down, google is down, all is lost");
@@ -87,22 +74,17 @@ Print out Garrnt chart of suggested classes
                     <div class="form-group row">
                         <div class="col-xs-2">
                             <label>Choose your degree</label>
-                            <select class="form-control">
-                                <option value=""></option>
+                            <select class="form-control" id="degreeFilter">
                                 <option value="CS">CS</option>
                                 <option value="CIS">CIS</option>
                             </select>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12">
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    Please select the classes you have completed below<br/>
-                    <!-- This will be filled in by the app with all classes it knows about -->
-                    <div id="classList"></div>
+                    <div>
+                        Please select the classes you have completed below<br/>
+                        <!-- This will be filled in by the app with all classes it knows about -->
+                        <div id="classList"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -110,36 +92,46 @@ Print out Garrnt chart of suggested classes
             <div class="panel panel-default">
                 <div class="panel-body">
                     <div class="form-group row">
-                        <div class="col-xs-3">
-                            <label class="control-label">Which days to search for classes?</label><br/>
-                            <label class="checkbox-inline no_indent">
-                                <input type="checkbox" class="checkbox-daysList" value="M" checked> M
+                        <label class="col-md-3 control-label" for="cbDays">Days to take Classes</label>
+                        <div class="col-md-3">
+                            <label class="checkbox-inline" for="cbDays-0">
+                                <input type="checkbox" name="cbDays" class="checkbox-daysList" id="cbDays-0" value="M" checked>
+                                M
                             </label>
-                            <label class="checkbox-inline no_indent">
-                                <input type="checkbox" class="checkbox-daysList" value="T" checked> T
+                            <label class="checkbox-inline" for="cbDays-1">
+                                <input type="checkbox" name="cbDays" class="checkbox-daysList" id="cbDays-1" value="T" checked>
+                                T
                             </label>
-                            <label class="checkbox-inline no_indent">
-                                <input type="checkbox" class="checkbox-daysList" value="W" checked> W
+                            <label class="checkbox-inline" for="cbDays-2">
+                                <input type="checkbox" name="cbDays" class="checkbox-daysList" id="cbDays-2" value="W" checked>
+                                W
                             </label>
-                            <label class="checkbox-inline no_indent">
-                                <input type="checkbox" class="checkbox-daysList" value="R" checked> R
+                            <label class="checkbox-inline" for="cbDays-3">
+                                <input type="checkbox" name="cbDays" class="checkbox-daysList" id="cbDays-3" value="T" checked>
+                                T
                             </label>
-                            <label class="checkbox-inline no_indent">
-                                <input type="checkbox" class="checkbox-daysList" value="F" checked> F
+                            <label class="checkbox-inline" for="cbDays-4">
+                                <input type="checkbox" name="cbDays" class="checkbox-daysList" id="cbDays-4" value="F" checked>
+                                F
                             </label>
                         </div>
-                        <div class="col-xs-2">
-                            <label class="control-label">Maximum Credits</label>
-                            <input type="text" class="form-control inline" value="16">
-                        </div>
-                        <div class="col-xs-2">
-                            <input type="button" class="form-control inline" value="Submit" onclick="calcSchedule()">
+                    </div>
+                    <div class="form-group row">
+                            <label class="col-md-3 control-label" for="textinput">Max Credits</label>
+                            <div class="col-md-3">
+                                <input id="maxCredits" type="text" value="16" placeholder="credits" class="form-control input-md">
+                            </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-md-3"></div>
+                        <div class="col-md-3">
+                            <input type="button" class="btn btn-success" value="Submit" onclick="calcSchedule()">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-12">
+        <div class="col-md-12" id="suggestedClasses" style="display: none">
             <div class="panel panel-default">
                 <div class="panel-body">
                     Here is a list of classes you can take
@@ -149,7 +141,7 @@ Print out Garrnt chart of suggested classes
                 </div>
             </div>
         </div>
-        <div class="col-md-12">
+        <div class="col-md-12" style="display: none">
             <div class="panel panel-default">
                 <div class="panel-body">
                     Here is a fancy chart of what we suggest you take
@@ -166,5 +158,19 @@ Print out Garrnt chart of suggested classes
     </div>
 </div>
 </div>
+    <!-- Javascript libs -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js" ></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+    <script src="js/underscore-min.js"></script>
+    <script src="js/underscore.string.min.js"></script>
+    <script src="js/moment.js"></script>
+
+    <link rel="stylesheet" href="css/vis.min.css">
+    <script src="js/vis.min.js"></script>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="js/index.js" async></script>
 </body>
 </html>

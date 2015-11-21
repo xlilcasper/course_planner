@@ -184,7 +184,7 @@ var Degree = function(otherDegrees) {
 };
 
 //Array of promises to know when both the data has loaded and that the dom is ready.
-var siteReady=[];
+var dataReady=[];
 //Array of promises for each DAL script we need to load
 var scriptsReady=[];
 //Promise when our page is ready
@@ -197,7 +197,7 @@ var classList = {};
 var degreeInfo={};
 
 //Wait until the dom is read.
-siteReady.push(domReady.promise());
+dataReady.push(domReady.promise());
 
 $(document).ready(function() {domReady.resolve();});
 //start our main app. This should get the page ready and then call main() once everything is setup
@@ -206,12 +206,6 @@ init();
 //Our init function should make sure all the data is ready and the dom is loaded
 function init()
 {
-    //Bind our click handler for expanding out
-    /*$('.classHeaderExpand').click(function(){
-        alert("I was clicked");
-        $('.classContentExpand').slideToggle('slow');
-    });*/
-
     //Fetch the data for CS. This will run the CS.js file
     //This way we have all the degree data for CS in one file and if it ever becomes
     //available to parse instead of manually update we can just edit that file to return the data
@@ -219,7 +213,6 @@ function init()
     var arrDalsToLoad = ["CS","CIS"];
         $.each(arrDalsToLoad,function(index,fileName) {
             scriptsReady.push($.getScript("./js/dal/" + fileName + ".js").done(function () {
-
                 }).fail(function () {
                     if (arguments[0].readyState == 0) {
                         console.error("Script "+ fileName +" failed to load");
@@ -232,14 +225,26 @@ function init()
             )});
 
     $.when.apply(null, scriptsReady).then(function() {
-        degreeInfo[degreeFilter].calcPriorityAll();
-        siteReady.push(getData().done(function () {
-            //Set our button from loading to check
-            //$("#runButton").text("Run");
-        }));
-        $.when.apply(null, siteReady).then(main);
+        //bind our event for when the selctor changes
+        $("#degreeFilter").change(function() {
+            degreeFilter=$("#degreeFilter").val();
+            loadDegree();
+        })
+        loadDegree();
     });
 }
+function loadDegree()
+{
+    $("#loading-overlay").show();
+    //Clear our check boxes incase this is a reload
+    degreeInfo[degreeFilter].calcPriorityAll();
+    dataReady.push(getData().done(function () {
+        //Set our button from loading to check
+        //$("#runButton").text("Run");
+    }));
+    $.when.apply(null, dataReady).then(main);
+}
+
 //Our data is loaded and our dom is loaded. Process the data and bind our events.
 function main() {
     $("#loading-overlay").hide();
@@ -273,7 +278,7 @@ function main() {
     var sortedClassList = _.sortBy(degreeInfo[degreeFilter].getClassList(),function (name) {return name});
     var lastDept="";
     var first=true;
-    var html='';
+    var html='<div id="classList-boxes">';
     $.each(sortedClassList,function (index,value) {
         var re = /([A-Z]{2,4})(\d{3})/;
         var deptName = re.exec(value)[1];
@@ -288,8 +293,10 @@ function main() {
         html += checkTemplate({name: value});
 
     });
-    $("#classList").append(html+'</div>');
-    $("#classList").accordion();
+    html+='</div></div>';
+    $("#classList-boxes").remove();
+    $("#classList").append(html);
+    $("#classList-boxes").accordion();
     //Draw our graph
     var container = $("#courseChart")[0];
     var options = {
@@ -370,7 +377,8 @@ function calcSchedule() {
     $("#classToTake").text("");
     $("#classToTake").append(linkedCourseArray(toTake));
     $("#classToTake").append("<br>Credits: "+creditsTaken);
-    $("#classCanTake").text(canTake);
+    $("#classCanTake").append(linkedCourseArray(canTake));
+    $("#suggestedClasses").fadeIn(2000);
 }
 
 //Pull down our data one department at a time
@@ -402,11 +410,12 @@ function getData() {
 function linkedCourseArray(arrCourses) {
     var html='';
     var url="http://catalog.svsu.edu/search_advanced.php?search_database=Search&search_db=Search&cpage=1&ecpage=1&ppage=1&spage=1&tpage=1&location=3&filter%5Bexact_match%5D=1&filter%5Bkeyword%5D=";
-    var linkTemplate=_.template('<a href="<%=url%><%=name%>" target="_blank"><%=name%></a> ');
+    var linkTemplate=_.template('<a href="<%=url%><%=name%>" target="_blank"><%=name%></a>, ');
 
     $.each(arrCourses,function(index,value) {
         html+=linkTemplate({url: url,name:value})
     })
+    html=html.substring(0, html.length - 2);
     return html;
 }
 
@@ -415,7 +424,7 @@ function allDay(day) {
     var daysAdd = _.indexOf(dWeek, day);
     var startTime = moment().startOf('week').add(daysAdd, 'days');
     var endTime = moment().startOf('week').add(daysAdd, 'days').add(23,'hours').add(59,'minutes');
-    
+
     return {start: startTime,end: endTime};
 }
 

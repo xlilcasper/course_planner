@@ -345,7 +345,7 @@ function calcSchedule() {
     $.each(daysNotWanted,function(index,day) {
         daysToExclude.push(allDay(day));
     });
-
+    var extra;
     $.each(classPriority,function(index,value) {
         var classData = classList[value.name];
         if (_.indexOf(classesTaken,value.name,true) ===-1) { //select it only if we haven't already taken it
@@ -355,12 +355,11 @@ function calcSchedule() {
                     return true; //Class isn't offered so we skip it.
                 } else { //Class is offered. Let make sure it doesn't conflict
 
-
-
                     //var sections = checkTimeOverlap(value.name,toTake);
                     //if (sections.length > 0) //we have at least one time we can take it
                     {
-                        if (canTakeTogether(value.name,toTake,daysToExclude)) {
+                        extra=canTakeTogether(value.name,toTake,daysToExclude,extra);
+                        if (extra.valid) {
                             toTake.push(value.name);
                             //toTakeSections.push(sections);
                             canTake.push(value.name);
@@ -374,10 +373,23 @@ function calcSchedule() {
             }
         }
     });
-    $("#classToTake").text("");
-    $("#classToTake").append(linkedCourseArray(toTake));
-    $("#classToTake").append("<br>Credits: "+creditsTaken);
-    $("#classCanTake").append(linkedCourseArray(canTake));
+    debugPrint("Extra!",extra);
+
+    var sectionTemplate=_.template($("#classInfo").html());
+    var html='<h4>Here is a list of classes you should take</h4><div id="classToTake-list">';
+    $.each(extra.sections,function(index,section) {
+        html+=sectionTemplate(section);
+    });
+    html+='</div>';
+    $("#classToTake-list").remove();
+    $("#classToTake").append(html);
+    //$("#classToTake-list").accordion();
+    //$("#classToTake").append(linkedCourseArray(_.pluck(extra.sections,'name')));
+
+
+    //$("#classToTake").append("<br>Credits: "+creditsTaken);
+    //$("#classCanTake").append(linkedCourseArray(canTake));
+
     $("#suggestedClasses").fadeIn(2000);
 }
 
@@ -429,51 +441,44 @@ function allDay(day) {
 }
 
 function canTakeTogether(course,arrCourses,excludeTimes) {
-    if ((typeof arrCourses==='undefined') || (arrCourses.length===0))//No conflicts because there is no other classes
-        return true;
-
-    var courseData = classList[course];
-    var canTake=true;
-
-    $.each(courseData,function(courseDataIndex,section) {
-        var days = section.times;
-        var courseCheck = arrCourses[0]; //Grab the first course in the list
-        var courseCheckData=classList[courseCheck];
-        var courseCheckTimes = _.pluck(courseCheckData,'times'); //contains all the times
-        if (typeof excludeTimes !=='undefined') {
-            //$.each(excludeTimes, function (index, checkTimes) { //Make sure we don't conflict with the exluded times
-                var nooverlap = noOverlap(excludeTimes, days);
-                if (!nooverlap) { //We overlap an exluded time
-                    canTake = false;
-                    return false;
-                }
-            //});
-        } else {
-            excludeTimes=[];
-        }
-        if (!canTake)
-            return false;
-        $.each(courseCheckTimes,function(index,checkTimes){
-            var nooverlap = noOverlap(checkTimes,days);
-
-            if (nooverlap) {
-                var badTimes = excludeTimes.concat(checkTimes).concat(days);
-                canTake = canTakeTogether(courseCheck, _.without(arrCourses,courseCheck),badTimes);
-            }
-            else {
-                canTake=false;
-                return false;//exit each
-            }
-        });
-        if (!canTake)
-            return false; //exit each
-    });
-    return canTake;
+    var extra={valid: false,sections: []};
+    rec_canTakeTogether(course,arrCourses,excludeTimes,extra);
+    return extra;
 }
+function rec_canTakeTogether(course,arrCourses,excludeTimes,extra) {
+    var courseData = classList[course]; //Get the info for the class we want to add
+    extra.valid=false;
+    $.each(courseData,function(courseDataIndex,section) { //Loop over every section that is offered
+        var days = section.times; //Grab the times the class is offered
+        if (typeof excludeTimes !== 'undefined') { //Make sure we don't fall into an excluded time
+            var nooverlap = noOverlap(excludeTimes,days);
+            if (!nooverlap) { //We have an overlap so we can use this one
+                return true;//Skip to the next section
+            }
+        }
+        //See if we have any other classes to check. Base case
+        if ((typeof arrCourses==='undefined') || (arrCourses.length===0))
+        {//No other classes to check so we are good.
+            extra.sections.push(section); //Push this section since it is on the end
+            extra.valid=true;
+            return false; //break out of our loop
+        }
+        //It doesn't match any excluded times, so lets check the the next courses in the list
+        var courseCheck = arrCourses[0]; //Grab the first course in the list
+        //Add our time to the exclude list
+        var badTimes = excludeTimes.concat(days);
+        //Check the next course
+        rec_canTakeTogether(courseCheck,_.without(arrCourses,courseCheck),badTimes,extra);
+        if (extra.valid) {
+            extra.sections.push(section); //This was a good path so push it and break
+            return false; //break out of our loop
+        }
+    })
+}
+
 //Times1 and times2 is an array of times for the days the classes meet
+//This returns if the do not overlap
 function noOverlap(times1,times2) {
-    debugPrint("Times 1",times1);
-    debugPrint("Times 2",times2);
     var nooverlap=true;
     $.each(times1,function(index,day1) {
         $.each(times2,function(index,day2) {

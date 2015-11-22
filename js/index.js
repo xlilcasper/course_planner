@@ -13,7 +13,10 @@ var ClassInfo = function (classData) { //Pass in the course
     this.credits=classData.credit;                          //Number of credits the course is worth
     this.room=classData.meetingTimes[0].room;               //Room the course is in
     this.days=s.chars(classData.meetingTimes[0].days);      //Days of the week. Should only contian U,M,T,W,R,F,S
-
+    this.lineNumber = classData.lineNumber;                 //Line number for course lookup
+    this.section = classData.section;                       //class section
+    this.isOpen = classData.status
+    this.raw=classData;                                     //Hold the raw data we got incase we need something not included.
     //Get the current day of the week
     var dWeek=["N","M","T","W","R","F","S"];
     var i = this.days.length;
@@ -235,7 +238,7 @@ function init()
 }
 function loadDegree()
 {
-    $("#loading-overlay").show();
+    $("#loading-overlay").fadeIn();
     //Clear our check boxes incase this is a reload
     degreeInfo[degreeFilter].calcPriorityAll();
     dataReady.push(getData().done(function () {
@@ -247,7 +250,7 @@ function loadDegree()
 
 //Our data is loaded and our dom is loaded. Process the data and bind our events.
 function main() {
-    $("#loading-overlay").hide();
+    $("#loading-overlay").fadeOut();
     console.log("Page is ready");
     //console.log(courses);
     var depts=["CS","CIS"];
@@ -346,6 +349,7 @@ function calcSchedule() {
         daysToExclude.push(allDay(day));
     });
     var extra;
+    var maxCredits = $("#maxCredits").val();
     $.each(classPriority,function(index,value) {
         var classData = classList[value.name];
         if (_.indexOf(classesTaken,value.name,true) ===-1) { //select it only if we haven't already taken it
@@ -364,7 +368,7 @@ function calcSchedule() {
                             //toTakeSections.push(sections);
                             canTake.push(value.name);
                             creditsTaken += parseInt(classData[0].credits);
-                            if (creditsTaken >= 16) {
+                            if (creditsTaken >= maxCredits) {
                                 return false;
                             }
                         }
@@ -376,7 +380,7 @@ function calcSchedule() {
     debugPrint("Extra!",extra);
 
     var sectionTemplate=_.template($("#classInfo").html());
-    var html='<h4>Here is a list of classes you should take</h4><div id="classToTake-list">';
+    var html='<div id="classToTake-list">';
     $.each(extra.sections,function(index,section) {
         html+=sectionTemplate(section);
     });
@@ -390,7 +394,7 @@ function calcSchedule() {
     //$("#classToTake").append("<br>Credits: "+creditsTaken);
     //$("#classCanTake").append(linkedCourseArray(canTake));
 
-    $("#suggestedClasses").fadeIn(2000);
+    $("#suggestedClasses").fadeIn(1500);
 }
 
 //Pull down our data one department at a time
@@ -406,7 +410,7 @@ function getData() {
         max: depts.length,
         value: 0
     });
-    $("#loading-overlay").show();
+    $("#loading-overlay").fadeIn();
     var prog=0;
     $.each(depts, function (index, dept) {
         getPromise.push($.getJSON("https://api.svsu.edu/courses?prefix=" + dept, function (data) {
